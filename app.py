@@ -3,9 +3,43 @@ import time
 import json
 from io import BytesIO
 
-st.set_page_config(page_title="Football Timer", layout="wide")
+# --- Page config ---
+st.set_page_config(
+    page_title="Football Timer",
+    layout="wide",
+    page_icon="⚽"
+)
 
-# Φόρτωση παικτών
+# --- Στυλ για πιο χαρούμενο περιβάλλον ---
+st.markdown(
+    """
+    <style>
+    body {
+        background-color: #f0f8ff;
+        color: #0d1b2a;
+        font-family: 'Arial', sans-serif;
+    }
+    div.stButton > button {
+        height: 60px;
+        width: 100%;
+        font-size: 20px;
+        background-color: #00bfa6;
+        color: white;
+        border-radius: 10px;
+    }
+    .stDownloadButton>button {
+        background-color: #ff6b6b;
+        color: white;
+        border-radius: 10px;
+        font-size: 20px;
+        height: 60px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# --- Φόρτωση παικτών ---
 players_file = "Players.json"
 try:
     with open(players_file, "r", encoding="utf-8") as f:
@@ -14,15 +48,15 @@ except FileNotFoundError:
     st.error("Δεν βρέθηκε το Players.json")
     st.stop()
 
-st.title("Football Timer - Real Time")
+st.title("⚽ Football Timer - Real Time 🕒")
 
-# Επιλογή αγώνα
+# --- Επιλογή αγώνα ---
 game_name = st.text_input("Όνομα Αγώνα (π.χ. game_1)", "game_1")
 
-# Επιλογή παικτών
+# --- Επιλογή παικτών ---
 selected_players = st.multiselect("Επίλεξε ποιοι παίζουν", players)
 
-# Session state για κάθε παίχτη
+# --- Session state για κάθε παίχτη ---
 for p in selected_players:
     if f"{p}_running" not in st.session_state:
         st.session_state[f"{p}_running"] = False
@@ -33,9 +67,26 @@ for p in selected_players:
     if f"{p}_placeholder" not in st.session_state:
         st.session_state[f"{p}_placeholder"] = None
 
+if "download_placeholder" not in st.session_state:
+    st.session_state["download_placeholder"] = st.empty()
+
 st.write("---")
 
-# Εμφάνιση παικτών με live χρόνο
+# --- Συνάρτηση format χρόνου ---
+def format_time(seconds):
+    if seconds < 60:
+        return f"{int(seconds)} sec"
+    elif seconds < 3600:
+        mins = int(seconds // 60)
+        secs = int(seconds % 60)
+        return f"{mins} min {secs} sec"
+    else:
+        hours = int(seconds // 3600)
+        mins = int((seconds % 3600) // 60)
+        secs = int(seconds % 60)
+        return f"{hours} h {mins} min {secs} sec"
+
+# --- Εμφάνιση παικτών με κουμπιά ---
 for p in selected_players:
     col1, col2, col3 = st.columns([2,1,1])
     with col1:
@@ -50,15 +101,31 @@ for p in selected_players:
                 st.session_state[f"{p}_running"] = True
                 st.session_state[f"{p}_start_time"] = time.time()
     with col3:
-        # Δημιουργία placeholder για live χρόνο
         if st.session_state[f"{p}_placeholder"] is None:
             st.session_state[f"{p}_placeholder"] = st.empty()
 
-# **Real-time update loop**
-for i in range(100000):  # μεγάλο όριο, θα τρέχει ουσιαστικά συνέχεια
+# --- Real-time update loop ---
+for i in range(100000):
     for p in selected_players:
         current = st.session_state[f"{p}_elapsed"]
         if st.session_state[f"{p}_running"]:
             current += time.time() - st.session_state[f"{p}_start_time"]
-        st.session_state[f"{p}_placeholder"].markdown(f"**{int(current)} sec**")
+        st.session_state[f"{p}_placeholder"].markdown(f"**{format_time(current)}**")
+
+    # Κουμπί download πάντα ορατό
+    with st.session_state["download_placeholder"]:
+        if st.button("Αποθήκευση και Κατέβασμα Αγώνα"):
+            results = {}
+            for p in selected_players:
+                elapsed = st.session_state[f"{p}_elapsed"]
+                if st.session_state[f"{p}_running"]:
+                    elapsed += time.time() - st.session_state[f"{p}_start_time"]
+                results[p] = int(elapsed)
+            json_bytes = BytesIO(json.dumps(results, ensure_ascii=False, indent=2).encode('utf-8'))
+            st.download_button(
+                label="Κατέβασε τον αγώνα",
+                data=json_bytes,
+                file_name=f"{game_name}.json",
+                mime="application/json"
+            )
     time.sleep(1)
