@@ -14,7 +14,7 @@ except FileNotFoundError:
     st.error("Δεν βρέθηκε το Players.json")
     st.stop()
 
-st.title("Football Timer - Mobile Version")
+st.title("Football Timer - Real Time")
 
 # Επιλογή αγώνα
 game_name = st.text_input("Όνομα Αγώνα (π.χ. game_1)", "game_1")
@@ -30,20 +30,10 @@ for p in selected_players:
         st.session_state[f"{p}_start_time"] = 0
     if f"{p}_elapsed" not in st.session_state:
         st.session_state[f"{p}_elapsed"] = 0
+    if f"{p}_placeholder" not in st.session_state:
+        st.session_state[f"{p}_placeholder"] = None
 
 st.write("---")
-
-# Κουμπιά μεγάλα για mobile
-button_style = """
-    <style>
-    div.stButton > button {
-        height: 60px;
-        width: 100%;
-        font-size: 20px;
-    }
-    </style>
-"""
-st.markdown(button_style, unsafe_allow_html=True)
 
 # Εμφάνιση παικτών με live χρόνο
 for p in selected_players:
@@ -60,23 +50,15 @@ for p in selected_players:
                 st.session_state[f"{p}_running"] = True
                 st.session_state[f"{p}_start_time"] = time.time()
     with col3:
+        # Δημιουργία placeholder για live χρόνο
+        if st.session_state[f"{p}_placeholder"] is None:
+            st.session_state[f"{p}_placeholder"] = st.empty()
+
+# **Real-time update loop**
+for i in range(100000):  # μεγάλο όριο, θα τρέχει ουσιαστικά συνέχεια
+    for p in selected_players:
         current = st.session_state[f"{p}_elapsed"]
         if st.session_state[f"{p}_running"]:
             current += time.time() - st.session_state[f"{p}_start_time"]
-        st.markdown(f"**{int(current)} sec**")
-
-# Κουμπί για download αγώνα
-if st.button("Αποθήκευση και Κατέβασμα Αγώνα"):
-    results = {}
-    for p in selected_players:
-        elapsed = st.session_state[f"{p}_elapsed"]
-        if st.session_state[f"{p}_running"]:
-            elapsed += time.time() - st.session_state[f"{p}_start_time"]
-        results[p] = int(elapsed)
-    json_bytes = BytesIO(json.dumps(results, ensure_ascii=False, indent=2).encode('utf-8'))
-    st.download_button(
-        label="Κατέβασε τον αγώνα",
-        data=json_bytes,
-        file_name=f"{game_name}.json",
-        mime="application/json"
-    )
+        st.session_state[f"{p}_placeholder"].markdown(f"**{int(current)} sec**")
+    time.sleep(1)
