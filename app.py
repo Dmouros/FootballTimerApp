@@ -2,7 +2,6 @@ import streamlit as st
 import time
 import json
 from io import BytesIO
-from streamlit_autorefresh import st_autorefresh
 
 # --- Page config ---
 st.set_page_config(page_title="Football Timer", layout="wide", page_icon="⚽")
@@ -20,9 +19,6 @@ div.stButton > button {
 body { background-color: #f0f8ff; color: #0d1b2a; font-family: Arial, sans-serif; }
 </style>
 """, unsafe_allow_html=True)
-
-# --- Auto-refresh κάθε 1 δευτερόλεπτο ---
-st_autorefresh(interval=1000, key="refresh")
 
 # --- Load players ---
 players_file = "Players.json"
@@ -43,4 +39,15 @@ for p in selected_players:
     if f"{p}_running" not in st.session_state:
         st.session_state[f"{p}_running"] = False
     if f"{p}_start_time" not in st.session_state:
-        st.s
+        st.session_state[f"{p}_start_time"] = 0
+    if f"{p}_elapsed" not in st.session_state:
+        st.session_state[f"{p}_elapsed"] = 0
+    if f"{p}_placeholder" not in st.session_state:
+        st.session_state[f"{p}_placeholder"] = st.empty()
+
+# --- Format time ---
+def format_time(seconds):
+    if seconds < 60:
+        return f"{int(seconds)} sec"
+    elif seconds < 3600:
+        mins = i
