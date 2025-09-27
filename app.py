@@ -1,11 +1,11 @@
 import streamlit as st
 import time
 import json
-from io import BytesIO
+import random
 
 st.set_page_config(page_title="⚽ Football Timer", layout="wide")
 
-# Στυλ για κουμπιά και γενικό background
+# Στυλ
 st.markdown("""
 <style>
 div.stButton > button {
@@ -23,9 +23,7 @@ body {
     color: #0d1b2a;
     font-family: 'Comic Sans MS', cursive, sans-serif;
 }
-h1 {
-    color: #ff6b6b;
-}
+h1 { color: #ff6b6b; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -40,13 +38,10 @@ except FileNotFoundError:
 
 st.title("⚽ Football Timer - Real Time 🏟️")
 
-# Επιλογή αγώνα
 game_name = st.text_input("Όνομα Αγώνα (π.χ. game_1) 🎮", "game_1")
-
-# Επιλογή παικτών
 selected_players = st.multiselect("Επίλεξε ποιοι παίζουν 🏃‍♂️🏃‍♀️", players)
 
-# Session state για κάθε παίχτη
+# Session state initialization
 for p in selected_players:
     if f"{p}_running" not in st.session_state:
         st.session_state[f"{p}_running"] = False
@@ -56,14 +51,32 @@ for p in selected_players:
         st.session_state[f"{p}_elapsed"] = 0
     if f"{p}_placeholder" not in st.session_state:
         st.session_state[f"{p}_placeholder"] = None
+    if f"{p}_ball" not in st.session_state:
+        st.session_state[f"{p}_ball"] = random.choice(["⚽","🔴","🔵","🟢","🟡"])
 
 st.write("---")
 
-# Εμφάνιση παικτών με live χρόνο
+def format_time(seconds):
+    if seconds < 60:
+        return f"{int(seconds)} sec"
+    elif seconds < 3600:
+        mins = int(seconds // 60)
+        secs = int(seconds % 60)
+        return f"{mins} min {secs} sec"
+    else:
+        hours = int(seconds // 3600)
+        mins = int((seconds % 3600) // 60)
+        secs = int(seconds % 60)
+        return f"{hours} h {mins} min {secs} sec"
+
+# Εμφάνιση παικτών με live χρόνο και μπαλίτσες
 for p in selected_players:
+    # Τυχαία αλλαγή χρώματος μπάλας κάθε ανανέωση
+    st.session_state[f"{p}_ball"] = random.choice(["⚽","🔴","🔵","🟢","🟡"])
+    
     col1, col2, col3 = st.columns([2,1,1])
     with col1:
-        st.markdown(f"⚽ **{p}**")
+        st.markdown(f"{st.session_state[f'{p}_ball']} **{p}**")
     with col2:
         if st.session_state[f"{p}_running"]:
             if st.button(f"⏸ Pause {p}", key=f"pause_{p}"):
@@ -77,11 +90,11 @@ for p in selected_players:
         if st.session_state[f"{p}_placeholder"] is None:
             st.session_state[f"{p}_placeholder"] = st.empty()
 
-# Real-time update loop (όπως τον είχες πριν)
+# Real-time update loop
 for i in range(100000):
     for p in selected_players:
         current = st.session_state[f"{p}_elapsed"]
         if st.session_state[f"{p}_running"]:
             current += time.time() - st.session_state[f"{p}_start_time"]
-        st.session_state[f"{p}_placeholder"].markdown(f"⏱️ **{int(current)} sec**")
+        st.session_state[f"{p}_placeholder"].markdown(f"⏱️ **{format_time(current)}**")
     time.sleep(1)
