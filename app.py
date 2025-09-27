@@ -1,11 +1,11 @@
 import streamlit as st
 import time
 import json
-import random
+from io import BytesIO
 
 st.set_page_config(page_title="⚽ Football Timer", layout="wide")
 
-# Στυλ
+# Στυλ για κουμπιά και background
 st.markdown("""
 <style>
 div.stButton > button {
@@ -23,7 +23,9 @@ body {
     color: #0d1b2a;
     font-family: 'Comic Sans MS', cursive, sans-serif;
 }
-h1 { color: #ff6b6b; }
+h1 {
+    color: #ff6b6b;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -38,10 +40,13 @@ except FileNotFoundError:
 
 st.title("⚽ Football Timer - Real Time 🏟️")
 
+# Επιλογή αγώνα
 game_name = st.text_input("Όνομα Αγώνα (π.χ. game_1) 🎮", "game_1")
+
+# Επιλογή παικτών
 selected_players = st.multiselect("Επίλεξε ποιοι παίζουν 🏃‍♂️🏃‍♀️", players)
 
-# Session state initialization
+# Session state για κάθε παίχτη
 for p in selected_players:
     if f"{p}_running" not in st.session_state:
         st.session_state[f"{p}_running"] = False
@@ -51,11 +56,10 @@ for p in selected_players:
         st.session_state[f"{p}_elapsed"] = 0
     if f"{p}_placeholder" not in st.session_state:
         st.session_state[f"{p}_placeholder"] = None
-    if f"{p}_ball" not in st.session_state:
-        st.session_state[f"{p}_ball"] = random.choice(["⚽","🔴","🔵","🟢","🟡"])
 
 st.write("---")
 
+# --- Format time σε sec / min / hour ---
 def format_time(seconds):
     if seconds < 60:
         return f"{int(seconds)} sec"
@@ -69,14 +73,11 @@ def format_time(seconds):
         secs = int(seconds % 60)
         return f"{hours} h {mins} min {secs} sec"
 
-# Εμφάνιση παικτών με live χρόνο και μπαλίτσες
+# Εμφάνιση παικτών με live χρόνο
 for p in selected_players:
-    # Τυχαία αλλαγή χρώματος μπάλας κάθε ανανέωση
-    st.session_state[f"{p}_ball"] = random.choice(["⚽","🔴","🔵","🟢","🟡"])
-    
     col1, col2, col3 = st.columns([2,1,1])
     with col1:
-        st.markdown(f"{st.session_state[f'{p}_ball']} **{p}**")
+        st.markdown(f"⚽ **{p}**")
     with col2:
         if st.session_state[f"{p}_running"]:
             if st.button(f"⏸ Pause {p}", key=f"pause_{p}"):
@@ -90,7 +91,7 @@ for p in selected_players:
         if st.session_state[f"{p}_placeholder"] is None:
             st.session_state[f"{p}_placeholder"] = st.empty()
 
-# Real-time update loop
+# Real-time update loop (όπως πριν)
 for i in range(100000):
     for p in selected_players:
         current = st.session_state[f"{p}_elapsed"]
